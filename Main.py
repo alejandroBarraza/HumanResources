@@ -2,6 +2,22 @@ from Trabajador import *
 from Turno import *
 import sqlite3
 from sqlite3 import Error
+import pika
+from json import loads
+# from threading import Thread
+import threading
+
+
+
+# def func1():
+#     print('Working')
+
+# def func2():
+#     print("Working")
+
+# if __name__ == '__main__':
+    
+
 
 
 
@@ -14,6 +30,65 @@ def create_connection(db_file):
     except Error as e:
         print(e)
     return conn
+
+def rabbitmq(conn):
+    
+    def callback(ch, method, properties, body):
+        print(" [x] %r:%r" % (method.routing_key, body))
+        insert_db_rabitmq(body,conn)
+
+    print ("iniciando rabbit")
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+    channel = connection.channel()
+
+    channel.exchange_declare(exchange='mantencion', exchange_type='direct')
+
+    result = channel.queue_declare(queue='', exclusive=True)
+    queue_name = result.method.queue
+
+    channel.queue_bind(exchange='mantencion', queue=queue_name, routing_key="rrhh")
+
+    channel.basic_consume(queue=queue_name, on_message_callback=callback, auto_ack=True)
+
+    channel.start_consuming()
+
+
+def insert_db_rabitmq(body,conn):
+    
+    body_parse = loads(body)
+
+    rut = body_parse["rut"]
+    nombre = body_parse["nombre"]
+    apellido = body_parse["apellido"] 
+    horas_trabajadas =  body_parse["horas"]
+    fecha = body_parse["fecha"] 
+
+    cur = conn.cursor()
+    cur.execute("""SELECT id FROM Trabajador WHERE rut = '%s'""" % rut)
+
+    id_trabajador = "NULL"
+
+    try:
+        id_trabajador = cur.fetchone()[0]
+    except:
+        id_trabajador = "NULL"
+        pass
+
+    if id_trabajador == "NULL":
+        
+        cur.execute("""INSERT INTO Trabajador( rut, nombre, apellido) 
+                   VALUES (?,?,?)""",( rut, nombre, apellido))
+
+        conn.commit()
+
+        cur.execute("""SELECT id FROM Trabajador WHERE rut = '%s'""" % rut)
+
+        id_trabajador = cur.fetchone()[0]
+    
+    cur.execute("""INSERT INTO Turno( id_trabajador, fecha, horas_trabajadas) 
+                   VALUES (?,?,?)""",( id_trabajador, fecha, horas_trabajadas))
+
+    conn.commit()
 
 #select all workers
 def select_all_trabajador(conn):
@@ -43,7 +118,6 @@ def show_trabajador_turno(conn, rut):
     rows = cur.fetchall()
     for row in rows:
         print(row)
-
 
 def insertar_turno(conn, rut):
     
@@ -81,7 +155,6 @@ def insertar_turno(conn, rut):
     except:
         return ("Error")
 
-
 # insert a worker to Trabajador Table.
 def insert_trabajador(conn):
     rut = input('Ingrese su rut: ')
@@ -97,7 +170,10 @@ def insert_trabajador(conn):
     print("El trabajador fue insertado.  ", cur.rowcount)
 
 
-def menu():
+
+
+
+def menuImpreso():
     print("[1]. Ingresar un trabajador")
     print("[2]. Mostrar lista trabajadores")
     print("[3]. Agregar turno trabajador")
@@ -105,12 +181,8 @@ def menu():
     print("[5]. Mostrar turnos trabajador")
     print("[0]. Salir del Programa")
 
-def main():
-    database = r"C:\Users\ale\Desktop\sistemaDeRRHH\TrabajadorDB.db"
-    # create a database connection
-    conn = create_connection(database)
-
-    menu()
+def menu(conn):
+    menuImpreso()
     option = int(input("ingresar opcion: "))
     while option != 0:
         if option == 1:
@@ -139,11 +211,41 @@ def main():
         else:
             print("selecione un numero disponible en el menu")
         print()
-        menu()
+        menuImpreso()
         option = int(input("ingresar opcion: "))
-    print("gracias por usar este programa")
+    print("gracias por usar este programa")   
    
 
 if __name__ == '__main__':
-    main()
+    database = r"C:\Users\ale\Desktop\sistemaDeRRHH\TrabajadorDB.db"
+    # create a database connection
+    conn = create_connection(database)
+    menu(conn)
+
+
+    threading.Thread(target=menu, args=[conn]).start()
+    rabbitmq(conn)
+
+
+
+#     import threading
+# import time
+
+
+# def hilo(i):
+
+#     print ("[+] En hilo %d\n" % i)
+    
+#     print ("[-] hilo %d finalizado\n" % i)
+
+# # Creacion y Ejecucion de 1 hilo paralelo a hilo 2
+
+# simplethread=threading.Thread(target=hilo, args=[1])
+# simplethread.start()
+
+# # Esto se ejecuta como proceso principal
+
+# hilo(2)
+# # Esperamos a que acabe el hilo paralelo 1
+# simplethread.join()
     
