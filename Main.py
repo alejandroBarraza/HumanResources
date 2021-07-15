@@ -159,11 +159,9 @@ def insert_trabajador(conn):
 
 
 def menuImpreso():
-    print("[1]. Ingresar un trabajador")
-    print("[2]. Mostrar lista trabajadores")
-    print("[3]. Agregar turno trabajador")
-    print("[4]. Mostrar lista turno")
-    print("[5]. Mostrar turnos trabajador")
+    print("[1]. Mostrar lista trabajadores")
+    print("[2]. Mostrar lista turno")
+    print("[3]. Mostrar turnos trabajador")
     print("[0]. Salir del Programa")
 
 def menu(conn):
@@ -173,26 +171,21 @@ def menu(conn):
         if option == 1:
             # do something
             with conn:
-                insert_trabajador(conn) 
-            pass
-        elif option == 2:
-            with conn:
                 print("1. info correspondiente a la tabla trabajador:")
                 select_all_trabajador(conn)
             pass
-        elif option == 3:
-            with conn:
-                rut = input(" Ingrese rut del trabajador: ")
-                insertar_turno(conn,rut)
-            pass
-        elif option == 4:
+        elif option == 2:
             with conn:
                 print("4. info correspondiente a la tabla turno:")
                 show_all_turno(conn) 
-        elif option == 5:
+                
+            pass
+        elif option == 3:
             with conn:
                 rut = input("Ingrese rut del trabajdor: ")
-                show_trabajador_turno(conn, rut)           
+                show_trabajador_turno(conn, rut)    
+            pass
+                       
         else:
             print("selecione un numero disponible en el menu")
         print()
