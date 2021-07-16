@@ -40,13 +40,13 @@ def rabbitmq(conn):
             pass
 
         if id_trabajador == "NULL":
-            print(1)
+            
             
             cur.execute("""INSERT INTO Trabajador( rut, nombre, apellido) 
                     VALUES (?,?,?)""",( rut, nombre, apellido))
 
             conn.commit()
-            print(2)
+            
 
             cur.execute("""SELECT id FROM Trabajador WHERE rut = '%s'""" % rut)
 
